@@ -1,0 +1,260 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
+
+/* ── Variables ─────────────────────────────────────────────────────────────── */
+:root {
+  --neon-cyan:   #00f5ff;
+  --neon-pink:   #ff006e;
+  --neon-yellow: #ffff00;
+  --neon-green:  #39ff14;
+  --dark-bg:     #020008;
+  --panel-bg:    rgba(0, 10, 30, 0.92);
+}
+
+/* ── Reset & base ───────────────────────────────────────────────────────────── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--dark-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Press Start 2P', monospace;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* CRT scanlines */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px, rgba(0, 0, 0, 0.12) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* CRT vignette */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.65) 100%);
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ── Layout wrapper ─────────────────────────────────────────────────────────── */
+#wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── HUD ────────────────────────────────────────────────────────────────────── */
+#hud {
+  width: 480px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--panel-bg);
+  border: 2px solid var(--neon-cyan);
+  border-bottom: none;
+  box-shadow: 0 0 20px rgba(0,245,255,0.25), inset 0 0 20px rgba(0,245,255,0.03);
+}
+
+#hud .label {
+  color: var(--neon-cyan);
+  font-size: 7px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+#hud .value { color: #fff; font-size: 10px; }
+
+#score-display .value { color: var(--neon-yellow); }
+#hi-display            { text-align: center; }
+#hi-display .value     { color: var(--neon-pink); }
+#lives-display         { text-align: right; }
+
+#lives-icons {
+  display: flex;
+  gap: 5px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.life-icon {
+  width: 10px;
+  height: 10px;
+  background: var(--neon-green);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* ── Canvas ─────────────────────────────────────────────────────────────────── */
+#gameCanvas {
+  display: block;
+  border: 2px solid var(--neon-cyan);
+  box-shadow: 0 0 30px rgba(0,245,255,0.35), 0 0 60px rgba(0,245,255,0.08);
+  cursor: none;
+  image-rendering: pixelated;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────────── */
+#footer {
+  width: 480px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--panel-bg);
+  border: 2px solid var(--neon-cyan);
+  border-top: 1px solid rgba(0,245,255,0.25);
+  box-shadow: 0 0 20px rgba(0,245,255,0.25);
+}
+
+#footer span {
+  font-size: 6px;
+  color: rgba(0,245,255,0.5);
+  letter-spacing: 1px;
+}
+
+#level-display {
+  color: var(--neon-green) !important;
+}
+
+/* ── Overlay (title / pause / game-over) ────────────────────────────────────── */
+#overlay {
+  position: absolute;
+  top: 42px; /* sits below the HUD bar */
+  width: 480px;
+  height: 540px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: rgba(2, 0, 8, 0.93);
+  border-left:  2px solid var(--neon-cyan);
+  border-right: 2px solid var(--neon-cyan);
+  z-index: 500;
+}
+
+#overlay.hidden { display: none; }
+
+/* Animated star dots inside overlay */
+.stars-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.star-dot {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  animation: twinkle var(--d, 2s) ease-in-out infinite var(--delay, 0s);
+}
+
+/* ── Overlay typography ─────────────────────────────────────────────────────── */
+.game-title {
+  font-size: 28px;
+  color: var(--neon-cyan);
+  letter-spacing: 3px;
+  text-shadow:
+    0 0 10px var(--neon-cyan),
+    0 0 30px var(--neon-cyan),
+    0 0 60px rgba(0,245,255,0.4);
+  animation: flicker 3s infinite;
+  text-align: center;
+  line-height: 1.4;
+  position: relative; /* above .stars-bg */
+}
+
+.game-subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px var(--neon-pink);
+  letter-spacing: 4px;
+  position: relative;
+}
+
+.pixel-divider {
+  width: 200px;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--neon-pink) 0px, var(--neon-pink) 8px,
+    transparent 8px, transparent 14px
+  );
+  box-shadow: 0 0 6px var(--neon-pink);
+  position: relative;
+}
+
+#game-over-score {
+  font-size: 8px;
+  color: var(--neon-yellow);
+  text-align: center;
+  line-height: 2.5;
+  position: relative;
+}
+
+/* ── Start / resume button ──────────────────────────────────────────────────── */
+.btn-start {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--dark-bg);
+  background: var(--neon-yellow);
+  border: none;
+  padding: 14px 28px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  box-shadow: 0 0 18px var(--neon-yellow), 4px 4px 0 #909000;
+  animation: pulse-btn 1.3s ease-in-out infinite;
+  transition: transform 0.1s;
+  position: relative;
+}
+
+.btn-start:hover  { transform: scale(1.05); }
+.btn-start:active { transform: scale(0.97) translateY(2px); }
+
+.controls-hint {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  line-height: 2;
+  letter-spacing: 1px;
+  position: relative;
+}
+
+.controls-hint span { color: var(--neon-cyan); }
+
+/* ── Keyframe animations ────────────────────────────────────────────────────── */
+@keyframes flicker {
+  0%,  95%, 100% { opacity: 1;    }
+  96%            { opacity: 0.85; }
+  97%            { opacity: 1;    }
+  98%            { opacity: 0.65; }
+}
+
+@keyframes pulse-btn {
+  0%,  100% { box-shadow: 0 0 18px var(--neon-yellow), 4px 4px 0 #909000; }
+  50%       { box-shadow: 0 0 32px var(--neon-yellow), 0 0 55px rgba(255,255,0,0.35), 4px 4px 0 #909000; }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 1;   }
+}
